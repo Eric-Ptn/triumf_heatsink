@@ -10,64 +10,109 @@ class PSO_param:
         self.discrete = discrete # boolean
         self.min_val = min_val
         self.max_val = max_val
+        self.val = None
 
-# PSO must act differently dependent on discrete or continuous parameter
-# perhaps if discrete, PSO will "rubber band" to the nearest point that is not the current point
-# if all the parameters in PSO are discrete, then PSO will keep track of the positions and values
+
+class PSO_particle:
+    def __init__(self, f, swarm):
+        self.f = f
+        self.bval = float('inf')
+        self.bpos = None
+        self.swarm = swarm
+
+    def set_motion(self, pos, vel):
+        self.pos = pos
+        self.vel = vel
+        self.evaluate()
+
+    def evaluate(self):
+
+        recollection = self.swarm.swarm_memory(self.pos)
+        
+        if recollection:
+            val = recollection
+        else:
+            val = self.f(self.pos)
+            self.swarm.swarm_inform(self.pos, val)
+
+        if val < self.bval:         # recollection could be from other particles, so need to do this for both cases
+            self.bval = val
+            self.bpos = self.pos
+
+        return val        
+    
+
+class PSO_swarm:
+    def __init__(self):
+        self.bval = float('inf')
+        self.bpos = None
+
+    def add_particles(self, PSO_particles):         # needs to be outside of __init__ because it would be circular that way...
+        self.particles = PSO_particles
+        if all(pt.discrete for pt in self.particles):
+            self.pos_val_dict = {}
+
+    def swarm_inform(self, pos, val):
+        if val < self.bval:
+            self.bval = val
+            self.bpos = pos
+        
+        if self.pos_val_dict:
+            self.pos_val_dict[pos] = val
+
+    def swarm_memory(self, pos):
+        if self.pos_val_dict and self.pos_val_dict[pos]:
+            return self.pos_val_dict[pos]
+        
+        return None
+
+# for discrete PSO parameters, do continuous velocity as usual but round the output to discrete points
+# if the output does not change the current point, move one step closer to a random particle??
+# idea is that at converged solution the "move one step to random particle" doesn't actually result in anything
 
 class PSO_optimizer:
-    def __init__(self, n_particles, w_inertia, c_cog, c_social, PSO_param_list, f):
-        self.n_particles = n_particles
-        self.w_inertia = w_inertia
-        self.c_cog = c_cog
-        self.c_social = c_social
+    def __init__(self, PSO_param_list, f):
         self.PSO_param_list = PSO_param_list
-        self.f = f                                  # is there some way to extract number of arguments (parameters) f takes?
+        self.f = f        
 
-        self.pos_particles = []
-        self.vel_particles = []
-        self.bpos_particles = []
-        self.bpos_swarm = ()
+    def initialize_particles(self, n_particles):
 
-        self.bval_particles = []
-        self.bval_swarm = float('inf')
+        self.swarm = PSO_swarm()
+        self.swarm.add_particles([PSO_particle(self.f, self.swarm) for _ in range(n_particles)])
 
-        self.pos_dict = {}                          # maps positions to values to avoid repeated evaluations
-
+        # TODO: need to fix this up
         
-        # TODO: need to initialize the positions and velocities
-
-        self.initialize_particles()
-
-    def initialize_particles(self):
-        dim = len(self.PSO_param_list)
-        pos_grid = np.linspace(0, 1, self.n_particles)
+        pos_grid = np.linspace(0, 1, n_particles)   # used to normalize the parameter range
         
-        for i in range(self.n_particles):
-            pos = []
+        for i in range(n_particles):
+            pos = []                                # each particle position and velocity is contained in an array
             vel = []
-            for j, param in enumerate(self.PSO_param_list):
-                if param.discrete:
-                    grid_pos = int(np.round(pos_grid[i] * (param.max_val - param.min_val) + param.min_val))
-                    pos.append(grid_pos)
-                    vel.append(np.random.randint(-1, 2))
+            for p in self.PSO_param_list:
+                if p.discrete:
+                    grid_pos = np.round(pos_grid[i] * (p.max_val - p.min_val) + p.min_val)
                 else:
-                    grid_pos = pos_grid[i] * (param.max_val - param.min_val) + param.min_val
-                    pos.append(grid_pos)
-                    vel.append(np.random.uniform(-1, 1))
+                    grid_pos = pos_grid[i] * (p.max_val - p.min_val) + p.min_val
+
+                pos.append(grid_pos)
+                vel.append(np.random.uniform(-1, 1)) # technically this doesn't scale well with unnormalized parameters.... but maybe I leave it for now
+
             self.pos_particles.append(pos)
             self.vel_particles.append(vel)
             self.bpos_particles.append(pos)
-            self.bval_particles.append(float('inf'))
+            self.bval_particles.append(self.f(self.PSO_param_list))
         
-        self.bpos_swarm = self.bpos_particles[0]
+        self.bpos_swarm = self.pos_particles[self.bval_particles.index(max(self.bval_particles))]
 
-
-    def update(self):
+    
+    def update(self, n_particles, w_inertia, c_cog, c_social):
+        
+        # make the loop explicit through each parameter... this is way too confusing even if it's marginally more compact/efficient
         
         r_cog, r_social = np.random.rand(self.n_particles, 2) # wonder if this will work
 
-        self.vel_particles = self.w_inertia * self.vel_particles + self.c_cog * r_cog * (self.bpos_particles - self.pos_particles) + self.c_social * r_social * ([self.bpos_swarm] * self.n_particles - self.pos_particles)
+        for p in self.PSO_param_list:
+
+        self.vel_particles = w_inertia * self.vel_particles + c_cog * r_cog * (self.bpos_particles - self.pos_particles) + c_social * r_social * ([self.bpos_swarm] * n_particles - self.pos_particles)
         self.pos_particles = self.pos_particles + self.vel_particles
 
         cur_val = self.f(self.pos_particles)
@@ -80,6 +125,14 @@ class PSO_optimizer:
             if cur_val[i] < self.bval_swarm:
                 self.bval_swarm = cur_val[i]
                 self.bpos_swarm = self.pos_particles[i]
+
+
+
+    def optimize(self, n_particles, w_inertia, c_cog, c_social):
+        self.initialize_particles(n_particles)
+
+        while True:
+            self.update(n_particles, w_inertia, c_cog, c_social)
 
 #################
 
