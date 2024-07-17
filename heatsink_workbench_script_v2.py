@@ -3,12 +3,92 @@ import os
 import datetime
 import numpy as np
 
+
+class PSO_param:
+    def __init__(self, name, discrete, min_val, max_val):
+        self.name = name
+        self.discrete = discrete # boolean
+        self.min_val = min_val
+        self.max_val = max_val
+
+# PSO must act differently dependent on discrete or continuous parameter
+# perhaps if discrete, PSO will "rubber band" to the nearest point that is not the current point
+# if all the parameters in PSO are discrete, then PSO will keep track of the positions and values
+
+class PSO_optimizer:
+    def __init__(self, n_particles, w_inertia, c_cog, c_social, PSO_param_list, f):
+        self.n_particles = n_particles
+        self.w_inertia = w_inertia
+        self.c_cog = c_cog
+        self.c_social = c_social
+        self.PSO_param_list = PSO_param_list
+        self.f = f                                  # is there some way to extract number of arguments (parameters) f takes?
+
+        self.pos_particles = []
+        self.vel_particles = []
+        self.bpos_particles = []
+        self.bpos_swarm = ()
+
+        self.bval_particles = []
+        self.bval_swarm = float('inf')
+
+        self.pos_dict = {}                          # maps positions to values to avoid repeated evaluations
+
+        
+        # TODO: need to initialize the positions and velocities
+
+        self.initialize_particles()
+
+    def initialize_particles(self):
+        dim = len(self.PSO_param_list)
+        pos_grid = np.linspace(0, 1, self.n_particles)
+        
+        for i in range(self.n_particles):
+            pos = []
+            vel = []
+            for j, param in enumerate(self.PSO_param_list):
+                if param.discrete:
+                    grid_pos = int(np.round(pos_grid[i] * (param.max_val - param.min_val) + param.min_val))
+                    pos.append(grid_pos)
+                    vel.append(np.random.randint(-1, 2))
+                else:
+                    grid_pos = pos_grid[i] * (param.max_val - param.min_val) + param.min_val
+                    pos.append(grid_pos)
+                    vel.append(np.random.uniform(-1, 1))
+            self.pos_particles.append(pos)
+            self.vel_particles.append(vel)
+            self.bpos_particles.append(pos)
+            self.bval_particles.append(float('inf'))
+        
+        self.bpos_swarm = self.bpos_particles[0]
+
+
+    def update(self):
+        
+        r_cog, r_social = np.random.rand(self.n_particles, 2) # wonder if this will work
+
+        self.vel_particles = self.w_inertia * self.vel_particles + self.c_cog * r_cog * (self.bpos_particles - self.pos_particles) + self.c_social * r_social * ([self.bpos_swarm] * self.n_particles - self.pos_particles)
+        self.pos_particles = self.pos_particles + self.vel_particles
+
+        cur_val = self.f(self.pos_particles)
+
+        for i in range(self.n_particles):
+            if cur_val[i] < self.bval_particles[i]:
+                self.bval_particles[i] = cur_val[i]
+                self.bpos_particles[i] = self.pos_particles[i]
+
+            if cur_val[i] < self.bval_swarm:
+                self.bval_swarm = cur_val[i]
+                self.bpos_swarm = self.pos_particles[i]
+
+#################
+
 '''INPUT PARAMETERS'''
 
-parameter_to_ranges = {
-    "n_length" : [6, 20],
-    "n_width" : [6, 20]
-}
+param_list = [
+    PSO_param('n_length', True, 6, 20),
+    PSO_param('n_width', True, 6, 20)
+]
 
 
 '''BIG VARIABLES'''
@@ -60,46 +140,6 @@ def debug_print(message):
         f.write(str(message) + "\n")
 
 
-class PSO_optimizer:
-    def __init__(self, n_particles, w_inertia, c_cog, c_social, f):
-        self.n_particles = n_particles
-        self.w_inertia = w_inertia
-        self.c_cog = c_cog
-        self.c_social = c_social
-        self.f = f                                  # is there some way to extract number of arguments (parameters) f takes?
-
-        self.pos_particles = []
-        self.vel_particles = []
-        self.bpos_particles = []
-        self.bpos_swarm = ()
-
-        self.bval_particles = []
-        self.bval_swarm = float('inf')
-
-        self.pos_dict = {}                          # maps positions to values to avoid repeated evaluations
-
-        # TODO: need to initialize the positions and velocities
-
-
-    def update(self):
-        
-        r_cog, r_social = np.random.rand(self.n_particles, 2) # wonder if this will work
-
-        self.vel_particles = self.w_inertia * self.vel_particles + self.c_cog * r_cog * (self.bpos_particles - self.pos_particles) + self.c_social * r_social * ([self.bpos_swarm] * self.n_particles - self.pos_particles)
-        self.pos_particles = self.pos_particles + self.vel_particles
-
-        cur_val = self.f(self.pos_particles)
-
-        for i in range(self.n_particles):
-            if cur_val[i] < self.bval_particles[i]:
-                self.bval_particles[i] = cur_val[i]
-                self.bpos_particles[i] = self.pos_particles[i]
-
-            if cur_val[i] < self.bval_swarm:
-                self.bval_swarm = cur_val[i]
-                self.bpos_swarm = self.pos_particles[i]
-
-
 debug_print('starting...')
 debug_print(datetime.datetime.now())
 debug_print('\n')
@@ -108,10 +148,10 @@ for i in range(3):
     
     new_param_vals = {}
 
-    for parameter in parameter_to_ranges:
-        random_val = random.randint(parameter_to_ranges[parameter][0], parameter_to_ranges[parameter][1])
-        change_parameter_val(parameter, random_val)
-        new_param_vals[parameter] = random_val
+    for i, p in enumerate(param_list):
+        random_val = random.randint(p.min_val, p.max_val)
+        change_parameter_val(p.name, random_val)
+        new_param_vals[i] = random_val
 
     f_sol_component.Update(AllDependencies=True)
 
