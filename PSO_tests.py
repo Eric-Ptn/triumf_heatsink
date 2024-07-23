@@ -107,6 +107,6 @@ def test_objective4(params):
 
     return first_exp + second_exp + 20 + np.exp(1)
 
-
-HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params3, test_objective3)
-HUGE_NUCLEAR_OPTIMIZER.optimize(32, 0.8, 0.1, 0.1, range_count_thresh=10, convergence_range=0.004)
+if __name__ == '__main__':
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params4, test_objective4)
+    HUGE_NUCLEAR_OPTIMIZER.optimize(10, 0.8, 0.1, 0.1, range_count_thresh=5, convergence_range=1.5)

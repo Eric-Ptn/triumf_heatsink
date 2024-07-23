@@ -3,6 +3,8 @@ import pickle
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+# need this imports for the pickle apparently
+from PSO_tests import test_objective1, test_objective2, test_objective3, test_objective4
 
 log_path = os.path.dirname(os.path.realpath(__file__))
 pickle_file = os.path.join(log_path, 'PSO_replay.pkl')
@@ -57,6 +59,5 @@ def animate(i):
     return particles, iteration_text
 
 anim = FuncAnimation(fig, animate, init_func=init, frames=len(iteration_swarm_map), interval=500, blit=True)
-
-# To save the animation, uncomment the line below
-anim.save('PSO_replay.mp4', writer='ffmpeg')
+anim.save('PSO_replay.mp4', fps=1)
+anim.save('PSO_replay.gif', writer='pillow', fps=2)
