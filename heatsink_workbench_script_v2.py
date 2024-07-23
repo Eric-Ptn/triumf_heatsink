@@ -67,4 +67,4 @@ def optimization_function(params):
 
 
 HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function)
-HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.2, 0.5, 0.5, 6)
+HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, 6)
