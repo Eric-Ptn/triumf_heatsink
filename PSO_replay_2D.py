@@ -3,11 +3,27 @@ import pickle
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
+print('hello???')
+
 # need this imports for the pickle apparently
+from cpython_script import optimization_function
 from PSO_tests import test_objective1, test_objective2, test_objective3, test_objective4
+
+print('hi')
 
 log_path = os.path.dirname(os.path.realpath(__file__))
 pickle_file = os.path.join(log_path, 'PSO_replay.pkl')
+
+
+with open(pickle_file, 'rb') as f:
+    swarm0 = pickle.load(f)
+
+for particle in swarm0.particles:
+    for param in particle.params:
+        print(param)
+
+import sys
+sys.exit()
 
 # Dictionary to store iteration-swarm pairs
 iteration_swarm_map = {}
@@ -35,8 +51,8 @@ sbests, = ax.plot([], [], 'rx', markersize=10)
 iteration_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
 def init():
-    ax.set_xlim(-15, 15)
-    ax.set_ylim(-15, 15)
+    ax.set_xlim(6, 20)
+    ax.set_ylim(6, 20)
     particles.set_data([], [])
     pbests.set_data([], [])
     sbests.set_data([], [])

@@ -3,10 +3,8 @@
 (in fluent, use symmetry plane for the first point)
 3. apply a constant heat flux to the fluid? can do it all within fluent to save time on sim for optimization rn
 - make output parameter more interesting
-- how the heck do I select all the pin faces......
-4. get more HPC cores for this computer holy moly
+- how the heck do I select all the pin faces...... maybe "everything except" type logic?
 5. overclocking????
-6. calculate what the flow speed should be (50lpm)
-
-
-C:\\Users\\AeroDesigN\\AppData\\Local\\Programs\\Python\\Python312
+6. calculate what the flow speed should be in new SW geometry (50lpm) - done, 3.4646 m/s
+7. make the text log update as solution progresses
+8. fix unpickling

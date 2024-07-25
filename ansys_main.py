@@ -1,6 +1,4 @@
 import os
-import sys
-import subprocess
 import time
 
 '''BIG VARIABLES'''
@@ -57,25 +55,16 @@ def run_ansys_update(params):
     return result
 
 
-def run_optimization():
-    script_path = r'C:\Users\AeroDesigN\Desktop\triumf_heatsink\cpython_script.py'
     
-    process = subprocess.Popen([sys.executable, script_path])
-    
-    while process.poll() is None:
-        if os.path.exists('ansys_request.txt'):
-            with open('ansys_request.txt', 'r') as f:
-                params = eval(f.read())
-            os.remove('ansys_request.txt')
-            
-            result = run_ansys_update(params)
-            
-            with open('ansys_response.txt', 'w') as f:
-                f.write(str(result))
+while not os.path.exists('optimization_result.txt'):
+    if os.path.exists('ansys_request.txt'):
+        with open('ansys_request.txt', 'r') as f:
+            params = eval(f.read())
+        os.remove('ansys_request.txt')
         
-        time.sleep(0.1)  # Small delay to prevent busy-waiting
+        result = run_ansys_update(params)
+        
+        with open('ansys_response.txt', 'w') as f:
+            f.write(str(result))
     
-    print("Optimization completed.")
-
-# Run the optimization
-run_optimization()
+    time.sleep(0.1)  # Small delay to prevent busy-waiting

@@ -1,0 +1,31 @@
+PSO_optimizer initialized at 2024-07-24 10:17:46.922730
+Particle 0, Output: 49008.036, {PSO_param(n_width, True, 6, 20, 10.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 10:23:02.685617
+Particle 1, Output: 144637.38, {PSO_param(n_width, True, 6, 20, 10.00), PSO_param(n_length, True, 6, 20, 16.00)}, 2024-07-24 10:28:09.168324
+Particle 2, Output: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 10:33:23.553312
+Particle 3, Output: 63912.998, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 16.00)}, 2024-07-24 10:38:42.119537
+Iteration 0, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
+Particle 0, Output: 57778.199, {PSO_param(n_width, True, 6, 20, 9.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 10:43:55.415121
+Particle 1, Output: 196384.08, {PSO_param(n_width, True, 6, 20, 8.00), PSO_param(n_length, True, 6, 20, 16.00)}, 2024-07-24 10:48:59.798925
+Particle 2, Output: 31410.77, {PSO_param(n_width, True, 6, 20, 15.00), PSO_param(n_length, True, 6, 20, 11.00)}, 2024-07-24 10:54:09.488852
+Particle 3, Output: 50734.621, {PSO_param(n_width, True, 6, 20, 17.00), PSO_param(n_length, True, 6, 20, 15.00)}, 2024-07-24 10:59:38.372428
+Iteration 1, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
+Particle 0, Output: 57778.199, {PSO_param(n_width, True, 6, 20, 9.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 10:59:38.373453
+Particle 1, Output: 232343.58, {PSO_param(n_width, True, 6, 20, 6.00), PSO_param(n_length, True, 6, 20, 15.00)}, 2024-07-24 11:04:47.695308
+Particle 2, Output: 39226.164, {PSO_param(n_width, True, 6, 20, 15.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:10:02.270892
+Particle 3, Output: 37730.493, {PSO_param(n_width, True, 6, 20, 19.00), PSO_param(n_length, True, 6, 20, 14.00)}, 2024-07-24 11:15:24.153568
+Iteration 2, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
+Particle 0, Output: 57778.199, {PSO_param(n_width, True, 6, 20, 9.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 11:15:24.154578
+Particle 1, Output: 201110.73, {PSO_param(n_width, True, 6, 20, 6.00), PSO_param(n_length, True, 6, 20, 14.00)}, 2024-07-24 11:20:30.748755
+Particle 2, Output: 39226.164, {PSO_param(n_width, True, 6, 20, 15.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:20:30.749757
+Particle 3, Output: 31156.754, {PSO_param(n_width, True, 6, 20, 20.00), PSO_param(n_length, True, 6, 20, 13.00)}, 2024-07-24 11:26:01.047052
+Iteration 3, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
+Particle 0, Output: 49008.036, {PSO_param(n_width, True, 6, 20, 10.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 11:26:01.048053
+Particle 1, Output: 149672.6, {PSO_param(n_width, True, 6, 20, 7.00), PSO_param(n_length, True, 6, 20, 13.00)}, 2024-07-24 11:31:13.260071
+Particle 2, Output: 39226.164, {PSO_param(n_width, True, 6, 20, 15.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:31:13.261081
+Particle 3, Output: 26595.608, {PSO_param(n_width, True, 6, 20, 20.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:36:39.136220
+Iteration 4, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
+Particle 0, Output: 40347.112, {PSO_param(n_width, True, 6, 20, 11.00), PSO_param(n_length, True, 6, 20, 10.00)}, 2024-07-24 11:41:48.099050
+Particle 1, Output: 107451.9, {PSO_param(n_width, True, 6, 20, 8.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:46:47.656985
+Particle 2, Output: 39226.164, {PSO_param(n_width, True, 6, 20, 15.00), PSO_param(n_length, True, 6, 20, 12.00)}, 2024-07-24 11:46:47.657995
+Particle 3, Output: 23522.858, {PSO_param(n_width, True, 6, 20, 20.00), PSO_param(n_length, True, 6, 20, 11.00)}, 2024-07-24 11:52:04.420145
+Iteration 5, best value: 21637.627, {PSO_param(n_width, True, 6, 20, 16.00), PSO_param(n_length, True, 6, 20, 10.00)}
