@@ -3,27 +3,14 @@ import pickle
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-print('hello???')
-
-# need this imports for the pickle apparently
+# need these imports for the pickle apparently
 from cpython_script import optimization_function
 from PSO_tests import test_objective1, test_objective2, test_objective3, test_objective4
 
-print('hi')
 
 log_path = os.path.dirname(os.path.realpath(__file__))
 pickle_file = os.path.join(log_path, 'PSO_replay.pkl')
 
-
-with open(pickle_file, 'rb') as f:
-    swarm0 = pickle.load(f)
-
-for particle in swarm0.particles:
-    for param in particle.params:
-        print(param)
-
-import sys
-sys.exit()
 
 # Dictionary to store iteration-swarm pairs
 iteration_swarm_map = {}
@@ -61,15 +48,15 @@ def init():
 
 def animate(i):
 
-    x = [particle.param_val('x') for particle in iteration_swarm_map[i].particles]
-    y = [particle.param_val('y') for particle in iteration_swarm_map[i].particles]
+    x = [particle.param_val('n_width') for particle in iteration_swarm_map[i].particles]
+    y = [particle.param_val('n_length') for particle in iteration_swarm_map[i].particles]
     particles.set_data(x, y)
 
-    bx = [particle.bparam_val('x') for particle in iteration_swarm_map[i].particles]
-    by = [particle.bparam_val('y') for particle in iteration_swarm_map[i].particles]
+    bx = [particle.bparam_val('n_width') for particle in iteration_swarm_map[i].particles]
+    by = [particle.bparam_val('n_length') for particle in iteration_swarm_map[i].particles]
     pbests.set_data(bx, by)
 
-    sbests.set_data([iteration_swarm_map[i].bparam_val('x')], [iteration_swarm_map[i].bparam_val('y')])
+    sbests.set_data([iteration_swarm_map[i].bparam_val('n_width')], [iteration_swarm_map[i].bparam_val('n_length')])
 
     iteration_text.set_text(f'Iteration {i}')
     return particles, iteration_text

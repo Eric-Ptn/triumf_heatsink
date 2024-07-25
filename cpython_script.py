@@ -24,8 +24,9 @@ input_ANSYS_params = {
     PSO_param('n_width', True, 6, 20)
 }
 
-HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function)
-result = HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, 5, 10000) # high convergence range for testing
+if __name__ == '__main__':
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function)
+    result = HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, 2, 10000) # high convergence range for testing
 
-with open(r'C:\Users\AeroDesigN\optimization_result.txt', 'w') as f:
-    f.write(str(result))
+    with open(r'C:\Users\AeroDesigN\optimization_result.txt', 'w') as f:
+        f.write(str(result))

@@ -49,17 +49,6 @@ class PSO_particle:
         self.bval = float('inf')
         self.swarm = swarm
 
-    # avoid pickling self.f
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        state['f'] = None
-        return state
-
-    # same as above
-    def __setstate__(self, state):
-        self.__dict__.update(state)
-        self.f = None
-
     # run this once when initializing all particles
     def set_motion(self, params):
         self.params = params
@@ -101,13 +90,6 @@ class PSO_swarm:
     def __init__(self):
         self.bparams = None
         self.bval = float('inf')
-
-    # avoid pickling the optimization function
-    def __getstate__(self):
-        state = self.__dict__.copy()
-        for particle in state.get('particles', []):
-            particle.f = None
-        return state
 
     # call this once right after __init__ to add particle associations, needs to be outside of __init__ because objects defs would be circular that way...
     def add_particles(self, PSO_particles, all_params_discrete):
@@ -230,10 +212,11 @@ class PSO_optimizer:
 
             # clear pickle file
             with open(os.path.join(log_path, 'PSO_replay.pkl'), 'wb') as f:
-                pass
-
-            with open(os.path.join(log_path, 'PSO_replay.pkl'), 'ab') as f:
                 pickle.dump(self.swarm, f)
+
+            with open(os.path.join(log_path, 'PSO_log.txt'), 'w') as f:
+                for line in self.log_lines:
+                    f.write(line + "\n")
 
 
         iterations = 1
@@ -254,7 +237,7 @@ class PSO_optimizer:
                 with open(os.path.join(log_path, 'PSO_replay.pkl'), 'ab') as f:
                     pickle.dump(self.swarm, f)
 
-                with open(os.path.join(log_path, 'PSO_log.txt'), "w") as f:
+                with open(os.path.join(log_path, 'PSO_log.txt'), "a") as f:
                     for line in self.log_lines:
                         f.write(line + "\n")
 
