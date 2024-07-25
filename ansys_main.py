@@ -1,16 +1,7 @@
 import os
-from mixedvar_PSO import PSO_param, PSO_optimizer
-
-
-#################
-
-'''INPUT PARAMETERS'''
-
-input_ANSYS_params = {
-    PSO_param('n_length', True, 6, 20),
-    PSO_param('n_width', True, 6, 20)
-}
-
+import sys
+import subprocess
+import time
 
 '''BIG VARIABLES'''
 
@@ -56,15 +47,35 @@ def exec_container_cmd(container, filename):
     container.Exit()
 
 
-# params is a set of PSO_param objects
-def optimization_function(params):
-    for param in params:
-        set_ANSYS_param(param.name, param.value)
-
+def run_ansys_update(params):
+    for name, value in params.items():
+        set_ANSYS_param(name, value)
+    
     f_sol_component.Update(AllDependencies=True)
+    
+    result = get_ANSYS_param('max_k-op')
+    return result
 
-    return get_ANSYS_param('max_k-op')
 
+def run_optimization():
+    script_path = r'C:\Users\AeroDesigN\Desktop\triumf_heatsink\cpython_script.py'
+    
+    process = subprocess.Popen([sys.executable, script_path])
+    
+    while process.poll() is None:
+        if os.path.exists('ansys_request.txt'):
+            with open('ansys_request.txt', 'r') as f:
+                params = eval(f.read())
+            os.remove('ansys_request.txt')
+            
+            result = run_ansys_update(params)
+            
+            with open('ansys_response.txt', 'w') as f:
+                f.write(str(result))
+        
+        time.sleep(0.1)  # Small delay to prevent busy-waiting
+    
+    print("Optimization completed.")
 
-HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function)
-HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, 6)
+# Run the optimization
+run_optimization()
