@@ -8,18 +8,28 @@ import os
 import copy
 import pickle
 from scipy.stats import norm
+import scipy.optimize as optimize
+
+# tiny helper function so cuteeee
+def myround(x, base, prec=2):
+  return np.round(base * np.round(float(x)/base), prec)
 
 
 # parameter is just a container to hold its own information
 # eq and hash are defined so that we can index into a dictionary containing past evaluations, if necessary (untested)
 class PSO_param:
-    def __init__(self, name, discrete, min_val, max_val, val=None, vel=None):
+    def __init__(self, name, discrete, min_val, max_val, val=None, vel=None, discretization=None):
         self.name = name
         self.discrete = discrete # boolean
         self.min_val = min_val
         self.max_val = max_val
         self.val = val
         self.vel = vel
+        self.discretization = discretization
+
+        if not self.discretization and self.discrete:
+            print(f'{self.name}: Using default discretization of 1')
+            self.discretization = 1
 
     # I do NOT require that velocities be the same - because that's cringe
     # totally screws up the "discrete vals dictionary" functionality of swarm
@@ -31,11 +41,12 @@ class PSO_param:
                 self.discrete == other.discrete and
                 self.min_val == other.min_val and
                 self.max_val == other.max_val and
-                self.val == other.val)
+                self.val == other.val and
+                self.discretization == other.discretization)
             
     # same as above for the hash holy fucking shit
     def __hash__(self):
-        return hash((self.name, self.discrete, self.min_val, self.max_val, self.val))
+        return hash((self.name, self.discrete, self.min_val, self.max_val, self.val, self.discretization))
 
     def __repr__(self):
         return f'PSO_param({self.name}, {self.discrete}, {self.min_val}, {self.max_val}, {"{:.2f}".format(self.val)})'
@@ -128,12 +139,76 @@ class PSO_swarm:
 #
 # f is the optimization function that receives a set of PSO_param objects and is minimized
 class PSO_optimizer:
-    def __init__(self, params, f):
+    def __init__(self, params, f, constraint_func=None):
         self.params = params
         self.f = f
+        
+        if constraint_func == None:
+            self.constraint_func = lambda: True
+        else:
+            self.constraint_func = constraint_func
+            
         self.log_lines = []
         self.log_lines.append(f'PSO_optimizer initialized at {datetime.datetime.now()}')
 
+    def clip_to_constraint(self, params):
+        # do NOT use self.params as those are empty templates remember
+        temp_params = sorted(copy.deepcopy(params), key=lambda p: p.name)
+        x0 = np.array([param.val for param in temp_params])
+
+        def objective(x):
+            return np.sum((x - x0)**2)  # Sum of squared distances from original point - find closest point to x0 given constraint
+
+        def constraint(x):
+            # assign values being tested by scipy optimize to temp_params for constraint_func to evaluate
+            for param, value in zip(temp_params, x):
+                param.val = value
+            return self.constraint_func(set(temp_params))
+
+        bounds = [(param.min_val, param.max_val) for param in temp_params]
+
+        result = optimize.minimize(
+            objective,
+            x0,
+            method='SLSQP',
+            constraints={'type': 'ineq', 'fun': constraint},
+            bounds=bounds
+        )
+
+        if not result.success:
+            print("Warning: Could not find a point satisfying the constraint")
+            raise ValueError("Warning: Could not find a point satisfying the constraint")
+
+        for param, value in zip(temp_params, result.x):
+            param.val = value
+
+        # check for any discrete params
+        if next((x for x in temp_params if x.discrete == True), None):
+            # jank sol for discrete vars for now: for every discrete var, round to a few nearby points and try all combinations - if none work then L
+            def generate_rounded_combinations(params):
+                combinations = []
+                for param in params:
+                    if param.discrete:
+                        rounded_value = myround(param.val, param.discretization)
+                        combinations.append([rounded_value, rounded_value + param.discretization, rounded_value - param.discretization])
+                    else:
+                        combinations.append([param.val])
+                return np.array(np.meshgrid(*combinations)).T.reshape(-1, len(params))
+
+            rounded_combinations = generate_rounded_combinations(temp_params)
+
+            for rounded_vals in rounded_combinations:
+                if constraint(rounded_vals):
+                    for param, value in zip(temp_params, rounded_vals):
+                        param.val = value
+                    break
+            else:
+                print("Warning: Could not find a point satisfying the constraint with discrete rounding")
+                raise ValueError("Warning: Could not find a point satisfying the constraint with discrete rounding")
+
+        return set(temp_params)
+
+    
     def initialize_particles(self, n_particles, logging):
         self.n_particles = n_particles
         self.swarm = PSO_swarm()
@@ -158,7 +233,7 @@ class PSO_optimizer:
 
             for j, param in enumerate(self.params):
                 if param.discrete:
-                    grid_pos = np.round(grid[i, j] * (param.max_val - param.min_val) + param.min_val) # puts to integer values...
+                    grid_pos = myround(grid[i, j] * (param.max_val - param.min_val) + param.min_val, param.discretization)
                 else:
                     grid_pos = grid[i, j] * (param.max_val - param.min_val) + param.min_val
 
@@ -166,6 +241,8 @@ class PSO_optimizer:
 
                 particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel))
 
+            particle_params = self.clip_to_constraint(particle_params)
+            
             f_output = particle.set_motion(particle_params)
 
             if logging:
@@ -184,16 +261,18 @@ class PSO_optimizer:
                 # for discrete PSO parameters, create a Gaussian probability curve centered around "continuous" point to determine
                 # where to jump next
                 if param.discrete:
-                    probabilities = norm.pdf(list(range(param.min_val, param.max_val + 1)), loc=new_val, scale=0.5) # scale = 1 means one grid point is one standard deviation
+                    probabilities = norm.pdf(list(range(param.min_val, param.max_val + 1, param.discretization)), loc=new_val, scale=0.5) # scale = 1 means one grid point is one standard deviation
                     probabilities /= np.sum(probabilities)
-                    new_val = np.random.choice(list(range(param.min_val, param.max_val + 1)), p=probabilities)
+                    new_val = np.random.choice(list(range(param.min_val, param.max_val + 1, param.discretization)), p=probabilities)
 
-                if new_val < param.min_val:
-                    new_val = param.min_val
-                elif new_val > param.max_val:
-                    new_val = param.max_val
+                # if new_val < param.min_val:
+                #     new_val = param.min_val
+                # elif new_val > param.max_val:
+                #     new_val = param.max_val
 
                 param.val = new_val
+
+            particle.params = self.clip_to_constraint(particle.params)
 
             f_output = particle.evaluate()
 
@@ -227,6 +306,7 @@ class PSO_optimizer:
         # when all particles' bests are within the range of the swarm best for multiple iterations, solution is said to have converged
         # not just one iteration, because particles have a tendency to overshoot and swing by what it currently thinks is the best, which is good behaviour
         while within_range_count < range_count_thresh and iterations <= max_iterations:
+            self.log_lines = [] # clear log lines every iteration
             self.update(w_inertia, c_cog, c_social, logging)
 
             if logging:
