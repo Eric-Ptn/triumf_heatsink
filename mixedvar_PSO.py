@@ -9,10 +9,11 @@ import copy
 import pickle
 from scipy.stats import norm
 import scipy.optimize as optimize
+import numpy.linalg as LA
 
 # tiny helper function so cuteeee
 def myround(x, base, prec=2):
-  return np.round(base * np.round(float(x)/base), prec)
+    return np.round(base * np.round(float(x)/base), prec)
 
 
 # parameter is just a container to hold its own information
@@ -144,7 +145,7 @@ class PSO_optimizer:
         self.f = f
         
         if constraint_func == None:
-            self.constraint_func = lambda: True
+            self.constraint_func = lambda _ : True
         else:
             self.constraint_func = constraint_func
             
@@ -157,13 +158,15 @@ class PSO_optimizer:
         x0 = np.array([param.val for param in temp_params])
 
         def objective(x):
-            return np.sum((x - x0)**2)  # Sum of squared distances from original point - find closest point to x0 given constraint
+            return LA.norm(np.subtract(x, x0))  # Sum of squared distances from original point - find closest point to x0 given constraint
 
         def constraint(x):
             # assign values being tested by scipy optimize to temp_params for constraint_func to evaluate
             for param, value in zip(temp_params, x):
                 param.val = value
-            return self.constraint_func(set(temp_params))
+
+            # inequality of optimize.minimize() expects a number, not a bool - so tack on float()
+            return float(self.constraint_func(set(temp_params)))
 
         bounds = [(param.min_val, param.max_val) for param in temp_params]
 
@@ -184,30 +187,34 @@ class PSO_optimizer:
 
         # check for any discrete params
         if next((x for x in temp_params if x.discrete == True), None):
-            # jank sol for discrete vars for now: for every discrete var, round to a few nearby points and try all combinations - if none work then L
-            def generate_rounded_combinations(params):
+            # jank sol for discrete vars for now: for every discrete var, round to a few nearby points and try all combinations
+            def generate_rounded_combinations(params, MU_MU_MU_MULTIPLIER):
                 combinations = []
                 for param in params:
                     if param.discrete:
                         rounded_value = myround(param.val, param.discretization)
-                        combinations.append([rounded_value, rounded_value + param.discretization, rounded_value - param.discretization])
+                        combinations.append([max(min(rounded_value + i * param.discretization, param.max_val), param.min_val) for i in range(-MU_MU_MU_MULTIPLIER, MU_MU_MU_MULTIPLIER + 1)])
                     else:
+                        # let's just assume the continuous variable is not the problem here...
                         combinations.append([param.val])
-                return np.array(np.meshgrid(*combinations)).T.reshape(-1, len(params))
 
-            rounded_combinations = generate_rounded_combinations(temp_params)
+                all_combinations = np.array(np.meshgrid(*combinations)).T.reshape(-1, len(params))
+                return all_combinations
 
-            for rounded_vals in rounded_combinations:
-                if constraint(rounded_vals):
-                    for param, value in zip(temp_params, rounded_vals):
-                        param.val = value
-                    break
-            else:
-                print("Warning: Could not find a point satisfying the constraint with discrete rounding")
-                raise ValueError("Warning: Could not find a point satisfying the constraint with discrete rounding")
+            MU_MU_MU_MULTIPLIER = 0
+            while True:
+                rounded_combinations = generate_rounded_combinations(temp_params, MU_MU_MU_MULTIPLIER)
+                for rounded_vals in rounded_combinations:
+                    if constraint(rounded_vals):
+                        for param, value in zip(temp_params, rounded_vals):
+                            param.val = value
+                        return set(temp_params)
+                
+                MU_MU_MU_MULTIPLIER += 1
 
-        return set(temp_params)
-
+                if MU_MU_MU_MULTIPLIER > 50: # yeah 50 for now too bad
+                    print("Warning: Could not find a point satisfying the constraint with discrete rounding")
+                    raise ValueError("Warning: Could not find a point satisfying the constraint with discrete rounding")
     
     def initialize_particles(self, n_particles, logging):
         self.n_particles = n_particles
@@ -239,7 +246,7 @@ class PSO_optimizer:
 
                 vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # yeah yeah magic number mhm
 
-                particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel))
+                particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel, param.discretization))
 
             particle_params = self.clip_to_constraint(particle_params)
             
@@ -261,9 +268,9 @@ class PSO_optimizer:
                 # for discrete PSO parameters, create a Gaussian probability curve centered around "continuous" point to determine
                 # where to jump next
                 if param.discrete:
-                    probabilities = norm.pdf(list(range(param.min_val, param.max_val + 1, param.discretization)), loc=new_val, scale=0.5) # scale = 1 means one grid point is one standard deviation
+                    probabilities = norm.pdf(list(np.arange(param.min_val, param.max_val + param.discretization, param.discretization)), loc=new_val, scale=param.discretization) # scale = param.discretization means one grid point is one standard deviation
                     probabilities /= np.sum(probabilities)
-                    new_val = np.random.choice(list(range(param.min_val, param.max_val + 1, param.discretization)), p=probabilities)
+                    new_val = np.random.choice(list(np.arange(param.min_val, param.max_val + param.discretization, param.discretization)), p=probabilities)
 
                 # if new_val < param.min_val:
                 #     new_val = param.min_val

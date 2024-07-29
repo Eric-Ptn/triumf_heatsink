@@ -5,8 +5,8 @@ import numpy as np
 
 # solution is f(0,0) = 0
 input_params1 = {
-    PSO_param('x', True, -2, 2),
-    PSO_param('y', True, -2, 2)
+    PSO_param('x', True, -2, 2, discretization=0.05),
+    PSO_param('y', True, -2, 2, discretization=0.15)
 }
 
 def test_objective1(params):
@@ -21,11 +21,35 @@ def test_objective1(params):
     y = get_param('y').val
     return x**2 + y**2
 
+def test_constraint1(params):
+    def get_param(name):
+        for param in params:
+            if param.name == name:
+                return param
+
+        return None
+
+    x = get_param('x').val
+    y = get_param('y').val
+    return x + y > 3 and x + y < 8
+
+def test_constraint2(params):
+    def get_param(name):
+        for param in params:
+            if param.name == name:
+                return param
+
+        return None
+
+    x = get_param('x').val
+    y = get_param('y').val
+    return (x-3)**2 + (y-3)**2 < 2
+
 
 # solution is f(3.182, 3.131) = ~-1.8
 input_params2 = {
-    PSO_param('x', True, 0, 5),
-    PSO_param('y', False, 0, 5)
+    PSO_param('x', True, 0, 5, discretization=0.1),
+    PSO_param('y', True, 0, 5, discretization=0.1)
 }
 
 def test_objective2(params):
@@ -86,8 +110,8 @@ def test_objective3(params):
 
 # ackley function
 input_params4 = {
-    PSO_param('x', True, -15, 15),
-    PSO_param('y', True, -15, 15)    
+    PSO_param('x', True, -15, 15, discretization=2),
+    PSO_param('y', True, -15, 15, discretization=2)    
 }
 
 def test_objective4(params):
@@ -107,6 +131,23 @@ def test_objective4(params):
 
     return first_exp + second_exp + 20 + np.exp(1)
 
+input_params5 = {
+    PSO_param('plate_width', False, 0.25, 3),
+    PSO_param('n_plates', True, 15, 60)    
+}
+
+def test_constraint3(params):
+    def get_param(name):
+        for param in params:
+            if param.name == name:
+                return param
+
+        return None
+
+    x = get_param('plate_width').val
+    y = get_param('n_plates').val
+    return x < 60.658446 / y
+
 if __name__ == '__main__':
-    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params4, test_objective4)
-    HUGE_NUCLEAR_OPTIMIZER.optimize(10, 0.8, 0.1, 0.1, range_count_thresh=5, convergence_range=1.5)
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params5, test_objective4, test_constraint2)
+    HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, range_count_thresh=5, convergence_range=0.2)

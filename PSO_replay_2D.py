@@ -38,8 +38,8 @@ sbests, = ax.plot([], [], 'rx', markersize=10)
 iteration_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
 def init():
-    ax.set_xlim(6, 20)
-    ax.set_ylim(6, 20)
+    ax.set_xlim(0.25, 3)
+    ax.set_ylim(15, 60)
     particles.set_data([], [])
     pbests.set_data([], [])
     sbests.set_data([], [])
@@ -48,15 +48,15 @@ def init():
 
 def animate(i):
 
-    x = [particle.param_val('n_width') for particle in iteration_swarm_map[i].particles]
-    y = [particle.param_val('n_length') for particle in iteration_swarm_map[i].particles]
+    x = [particle.param_val('plate_width') for particle in iteration_swarm_map[i].particles]
+    y = [particle.param_val('n_plates') for particle in iteration_swarm_map[i].particles]
     particles.set_data(x, y)
 
-    bx = [particle.bparam_val('n_width') for particle in iteration_swarm_map[i].particles]
-    by = [particle.bparam_val('n_length') for particle in iteration_swarm_map[i].particles]
+    bx = [particle.bparam_val('plate_width') for particle in iteration_swarm_map[i].particles]
+    by = [particle.bparam_val('n_plates') for particle in iteration_swarm_map[i].particles]
     pbests.set_data(bx, by)
 
-    sbests.set_data([iteration_swarm_map[i].bparam_val('n_width')], [iteration_swarm_map[i].bparam_val('n_length')])
+    sbests.set_data([iteration_swarm_map[i].bparam_val('x')], [iteration_swarm_map[i].bparam_val('y')])
 
     iteration_text.set_text(f'Iteration {i}')
     return particles, iteration_text
