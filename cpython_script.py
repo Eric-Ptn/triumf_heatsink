@@ -20,13 +20,25 @@ def optimization_function(params):
     return result
 
 input_ANSYS_params = {
-    PSO_param('n_length', True, 6, 20),
-    PSO_param('n_width', True, 6, 20)
+    PSO_param('plate_width', False, 0.5, 3),
+    PSO_param('n_plates', True, 15, 45)
 }
 
+def constraints(params):
+    def get_param(name):
+        for param in params:
+            if param.name == name:
+                return param
+
+        return None
+
+    pw = get_param('plate_width').val
+    n = get_param('n_plates').val
+    return pw < (60.658446 - 0.5 * (n - 1)) / n # 0.5mm extra space
+
 if __name__ == '__main__':
-    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function)
-    result = HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, 2, 10000) # high convergence range for testing
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function, constraints)
+    result = HUGE_NUCLEAR_OPTIMIZER.optimize(6, 0.8, 0.1, 0.1, 5, 5)
 
     with open(r'C:\Users\AeroDesigN\optimization_result.txt', 'w') as f:
         f.write(str(result))

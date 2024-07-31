@@ -35,10 +35,16 @@ particles, = ax.plot([], [], 'bo', markersize=6)
 pbests, = ax.plot([], [], '+', color='orange', markersize=10)
 sbests, = ax.plot([], [], 'rx', markersize=10)
 
+# Add the curve x = 60.65846/y
+import numpy as np
+y = np.linspace(15, 60, 1000)
+x = 60.65846 / y
+curve, = ax.plot(x, y, 'g-', label='x = 60.65846/y')
+
 iteration_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
 def init():
-    ax.set_xlim(0.25, 3)
+    ax.set_xlim(0.5, 3)
     ax.set_ylim(15, 60)
     particles.set_data([], [])
     pbests.set_data([], [])
@@ -56,7 +62,7 @@ def animate(i):
     by = [particle.bparam_val('n_plates') for particle in iteration_swarm_map[i].particles]
     pbests.set_data(bx, by)
 
-    sbests.set_data([iteration_swarm_map[i].bparam_val('x')], [iteration_swarm_map[i].bparam_val('y')])
+    sbests.set_data([iteration_swarm_map[i].bparam_val('plate_width')], [iteration_swarm_map[i].bparam_val('n_plates')])
 
     iteration_text.set_text(f'Iteration {i}')
     return particles, iteration_text

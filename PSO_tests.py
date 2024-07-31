@@ -17,8 +17,8 @@ def test_objective1(params):
 
         return None
 
-    x = get_param('x').val
-    y = get_param('y').val
+    x = get_param('plate_width').val
+    y = get_param('n_plates').val
     return x**2 + y**2
 
 def test_constraint1(params):
@@ -123,8 +123,8 @@ def test_objective4(params):
 
         return None
 
-    x = get_param('x').val
-    y = get_param('y').val
+    x = get_param('plate_width').val
+    y = get_param('n_plates').val
 
     first_exp = -20 * np.exp(-0.2 * np.sqrt(0.5 * (x**2 + y**2)))
     second_exp = -np.exp(0.5 * (np.cos(x) + np.cos(y)))
@@ -132,7 +132,7 @@ def test_objective4(params):
     return first_exp + second_exp + 20 + np.exp(1)
 
 input_params5 = {
-    PSO_param('plate_width', False, 0.25, 3),
+    PSO_param('plate_width', False, 0.5, 3),
     PSO_param('n_plates', True, 15, 60)    
 }
 
@@ -144,10 +144,10 @@ def test_constraint3(params):
 
         return None
 
-    x = get_param('plate_width').val
-    y = get_param('n_plates').val
-    return x < 60.658446 / y
+    pw = get_param('plate_width').val
+    n = get_param('n_plates').val
+    return pw < 60.658446 / n
 
 if __name__ == '__main__':
-    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params5, test_objective4, test_constraint2)
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params5, test_objective1, test_constraint3)
     HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, range_count_thresh=5, convergence_range=0.2)
