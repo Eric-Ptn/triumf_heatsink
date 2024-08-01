@@ -55,12 +55,12 @@ def run_ansys_update(params):
     fluent_settings = f_setup_container.GetFluentLauncherSettings()
     fluent_settings.SetEntityProperties(Properties=Set(DisplayText="Fluent Launcher Settings", Precision="Double", EnvPath={}, RunParallel=True, NumberOfProcessorsMeshing=20, NumberOfProcessors=20, NumberOfGPGPUs=1))
 
-    exec_container_cmd(f_setup_container, "C:\Users\AeroDesigN\Desktop\\triumf_heatsink\plate_heatsink_GUI_script.jou")
+    # exec_container_cmd(f_setup_container, "C:\Users\AeroDesigN\Desktop\\triumf_heatsink\plate_GUI_v1.jou")
 
-    # f_setup_container.Edit()
-    # # remember to use backslashes to cancel any "special characters" in path (\n, \t etc.) I don't think r"" works here
-    # f_setup_container.SendCommand(Command="/file/read-journal \"C:\Users\AeroDesigN\Desktop\\triumf_heatsink\plate_heatsink_GUI_script.jou\" ")
-    # f_setup_container.Exit()
+    f_setup_container.Edit()
+    # remember to use backslashes to cancel any "special characters" in path (\n, \t etc.) I don't think r"" works here
+    f_setup_container.SendCommand(Command="/file/read-journal \"C:\Users\AeroDesigN\Desktop\\triumf_heatsink\plate_GUI_v1.jou\" ")
+    f_setup_container.Exit()
 
     f_sol_component.Update()
     

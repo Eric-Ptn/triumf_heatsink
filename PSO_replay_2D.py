@@ -2,6 +2,7 @@ import os
 import pickle
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
+import numpy as np
 
 # need these imports for the pickle apparently
 from cpython_script import optimization_function
@@ -36,16 +37,15 @@ pbests, = ax.plot([], [], '+', color='orange', markersize=10)
 sbests, = ax.plot([], [], 'rx', markersize=10)
 
 # Add the curve x = 60.65846/y
-import numpy as np
-y = np.linspace(15, 60, 1000)
-x = 60.65846 / y
-curve, = ax.plot(x, y, 'g-', label='x = 60.65846/y')
+cy = np.linspace(15, 45, 1000)
+cx = (60.65846 - 0.5 * (cy - 1)) / cy
+curve, = ax.plot(cx, cy, 'g-', label='geometric constraint')
 
 iteration_text = ax.text(0.02, 0.95, '', transform=ax.transAxes)
 
 def init():
     ax.set_xlim(0.5, 3)
-    ax.set_ylim(15, 60)
+    ax.set_ylim(15, 45)
     particles.set_data([], [])
     pbests.set_data([], [])
     sbests.set_data([], [])

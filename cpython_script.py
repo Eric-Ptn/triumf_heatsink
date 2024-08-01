@@ -34,7 +34,7 @@ def constraints(params):
 
     pw = get_param('plate_width').val
     n = get_param('n_plates').val
-    return pw < (60.658446 - 0.5 * (n - 1)) / n # 0.5mm extra space
+    return pw < (60.65846 - 0.5 * (n - 1)) / n # 0.5mm extra space
 
 if __name__ == '__main__':
     HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function, constraints)
