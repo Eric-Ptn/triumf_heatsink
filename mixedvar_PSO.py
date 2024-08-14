@@ -215,6 +215,9 @@ class PSO_optimizer:
                 if MU_MU_MU_MULTIPLIER > 50: # yeah 50 for now too bad
                     print("Warning: Could not find a point satisfying the constraint with discrete rounding")
                     raise ValueError("Warning: Could not find a point satisfying the constraint with discrete rounding")
+
+        else:
+            return set(temp_params)
     
     def initialize_particles(self, n_particles, logging):
         self.n_particles = n_particles
