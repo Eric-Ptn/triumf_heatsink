@@ -8,9 +8,9 @@ import numpy as np
 from cpython_script import optimization_function
 from PSO_tests import test_objective1, test_objective2, test_objective3, test_objective4
 
-
-log_path = os.path.dirname(os.path.realpath(__file__))
-pickle_file = os.path.join(log_path, 'PSO_replay.pkl')
+log_path = r"C:\Users\ericp\OneDrive\Desktop\triumf\plate_sink_outputs"
+# log_path = os.path.dirname(os.path.realpath(__file__))
+pickle_file = os.path.join(log_path, 'PSO_replay (1).pkl')
 
 
 # Dictionary to store iteration-swarm pairs
