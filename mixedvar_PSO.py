@@ -4,12 +4,12 @@
 
 import numpy as np
 import datetime
-import os
 import copy
 import pickle
 from scipy.stats import norm
 import scipy.optimize as optimize
 import numpy.linalg as LA
+from config import path
 
 # tiny helper function so cuteeee
 def myround(x, base, prec=2):
@@ -17,7 +17,7 @@ def myround(x, base, prec=2):
 
 
 # parameter is just a container to hold its own information
-# eq and hash are defined so that we can index into a dictionary containing past evaluations, if necessary (untested)
+# eq and hash are defined so that we can index into a dictionary containing past evaluations, if all the parameters are discrete
 class PSO_param:
     def __init__(self, name, discrete, min_val, max_val, val=None, vel=None, discretization=None):
         self.name = name
@@ -32,8 +32,7 @@ class PSO_param:
             print(f'{self.name}: Using default discretization of 1')
             self.discretization = 1
 
-    # I do NOT require that velocities be the same - because that's cringe
-    # totally screws up the "discrete vals dictionary" functionality of swarm
+    # I do NOT require that velocities be the same - I'm using the has for function evaluations, which only depends on position of parameter
     def __eq__(self, other):
         if not isinstance(other, PSO_param):
             return False
@@ -45,7 +44,7 @@ class PSO_param:
                 self.val == other.val and
                 self.discretization == other.discretization)
             
-    # same as above for the hash holy fucking shit
+    # same as above for the hash
     def __hash__(self):
         return hash((self.name, self.discrete, self.min_val, self.max_val, self.val, self.discretization))
 
@@ -103,23 +102,20 @@ class PSO_swarm:
         self.bparams = None
         self.bval = float('inf')
 
-    # call this once right after __init__ to add particle associations, needs to be outside of __init__ because objects defs would be circular that way...
+    # call this once right after __init__ to add particle associations, needs to be outside of __init__ because objects defs would be circular that way
+    # swarm would need particle objects for init but particle object needs swarm for init
     def add_particles(self, PSO_particles, all_params_discrete):
         self.particles = PSO_particles
         if all_params_discrete:
             self.param_val_dict = {}
 
-    def swarm_inform(self, params, val):
-        if val < self.bval:
-            self.bval = val
-            self.bparams = copy.deepcopy(params)
-        
+    def swarm_inform(self, params, val):      
         # deepcopy() needed because otherwise ELEMENTS of frozenset() can be edited
         if hasattr(self, 'param_val_dict'):
             self.param_val_dict[frozenset(copy.deepcopy(params))] = val
 
     def swarm_memory(self, params):
-        # I do not fucking know why I need to use copy.deepcopy() to do indexing correctly and I do not fucking care
+        # I do not know why I need to use copy.deepcopy() to do indexing correctly and I do not care
         # need to use hasattr() and get() because no guarantees for either condition (don't want errors)
         if hasattr(self, 'param_val_dict') and self.param_val_dict.get(frozenset(copy.deepcopy(params))):
             return self.param_val_dict[frozenset(copy.deepcopy(params))]
@@ -132,11 +128,17 @@ class PSO_swarm:
                 return param.val
 
         return None
+    
+    def update_best_location(self):
+        for particle in self.particles:
+            if particle.bval < self.bval:
+                self.bval = particle.bval
+                self.bparams = copy.deepcopy(particle.bparams)
 
 
 # params is a set of PSO_param objects
-# position and velocity don't need to be defined for these PSO_param instances, as they're just a template to define
-# the params for its particles
+# position and velocity don't need to be defined for these PSO_param instances, 
+# as they're just a template to define what TYPE of parameter the optimizer is dealing with, and initialize the particles that way
 #
 # f is the optimization function that receives a set of PSO_param objects and is minimized
 class PSO_optimizer:
@@ -148,17 +150,16 @@ class PSO_optimizer:
             self.constraint_func = lambda _ : True
         else:
             self.constraint_func = constraint_func
-            
-        self.log_lines = []
-        self.log_lines.append(f'PSO_optimizer initialized at {datetime.datetime.now()}')
 
+    # this function exists just to bring particles originally outside the allowed boundary back into the viable region
+    # the region is not just defined by param min and max values, but also constraint_func of PSO_optimizer
     def clip_to_constraint(self, params):
-        # do NOT use self.params as those are empty templates remember
+        # do NOT use self.params as those are empty templates we don't want edited remember, use deepcopy
         temp_params = sorted(copy.deepcopy(params), key=lambda p: p.name)
         x0 = np.array([param.val for param in temp_params])
 
         def objective(x):
-            return LA.norm(np.subtract(x, x0))  # Sum of squared distances from original point - find closest point to x0 given constraint
+            return LA.norm(np.subtract(x, x0))  # Sum of squared distances from original point - find closest point to x0 that obeys constraint
 
         def constraint(x):
             # assign values being tested by scipy optimize to temp_params for constraint_func to evaluate
@@ -179,23 +180,26 @@ class PSO_optimizer:
         )
 
         if not result.success:
-            print("Warning: Could not find a point satisfying the constraint")
-            raise ValueError("Warning: Could not find a point satisfying the constraint")
+            print('Warning: Could not find a point satisfying the constraint')
+            raise ValueError('Warning: Could not find a point satisfying the constraint')
 
         for param, value in zip(temp_params, result.x):
             param.val = value
 
-        # check for any discrete params
+        # result just optimized points to be as close to the original point as possible while obeying constraint,
+        # but now every parameter holds a continuous value, including discrete parameters
+        # 
+        # need to snap the discrete parameters to a nearby legal point
         if next((x for x in temp_params if x.discrete == True), None):
-            # jank sol for discrete vars for now: for every discrete var, round to a few nearby points and try all combinations
             def generate_rounded_combinations(params, MU_MU_MU_MULTIPLIER):
                 combinations = []
                 for param in params:
                     if param.discrete:
+                        # for discrete parameters, try snapping to every legal point in a square, range defined by MU_MU_MU_MULTIPLIER value
                         rounded_value = myround(param.val, param.discretization)
                         combinations.append([max(min(rounded_value + i * param.discretization, param.max_val), param.min_val) for i in range(-MU_MU_MU_MULTIPLIER, MU_MU_MU_MULTIPLIER + 1)])
                     else:
-                        # let's just assume the continuous variable is not the problem here...
+                        # don't change the continuous variables
                         combinations.append([param.val])
 
                 all_combinations = np.array(np.meshgrid(*combinations)).T.reshape(-1, len(params))
@@ -204,6 +208,7 @@ class PSO_optimizer:
             MU_MU_MU_MULTIPLIER = 0
             while True:
                 rounded_combinations = generate_rounded_combinations(temp_params, MU_MU_MU_MULTIPLIER)
+                # try every discrete parameter combination in the MU_MU_MU_MULTIPLIER range to see what works
                 for rounded_vals in rounded_combinations:
                     if constraint(rounded_vals):
                         for param, value in zip(temp_params, rounded_vals):
@@ -212,9 +217,9 @@ class PSO_optimizer:
                 
                 MU_MU_MU_MULTIPLIER += 1
 
-                if MU_MU_MU_MULTIPLIER > 50: # yeah 50 for now too bad
-                    print("Warning: Could not find a point satisfying the constraint with discrete rounding")
-                    raise ValueError("Warning: Could not find a point satisfying the constraint with discrete rounding")
+                if MU_MU_MU_MULTIPLIER > 50: # yeah 50 for now is too bad, magic number yeah so what
+                    print('Warning: Could not find a point satisfying the constraint with discrete rounding')
+                    raise ValueError('Warning: Could not find a point satisfying the constraint with discrete rounding')
 
         else:
             return set(temp_params)
@@ -224,8 +229,7 @@ class PSO_optimizer:
         self.swarm = PSO_swarm()
         self.swarm.add_particles([PSO_particle(self.f, self.swarm) for _ in range(n_particles)], all(param.discrete for param in self.params))
 
-
-        #### make a grid of points
+        # make a grid of points
         # Calculate the number of points along each dimension
         points_per_dim = int(np.ceil(n_particles ** (1 / len(self.params))))
 
@@ -247,7 +251,7 @@ class PSO_optimizer:
                 else:
                     grid_pos = grid[i, j] * (param.max_val - param.min_val) + param.min_val
 
-                vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # yeah yeah magic number mhm
+                vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # found that this 0.2 scaling works nicely on initial vel, another day another magic number
 
                 particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel, param.discretization))
 
@@ -271,14 +275,10 @@ class PSO_optimizer:
                 # for discrete PSO parameters, create a Gaussian probability curve centered around "continuous" point to determine
                 # where to jump next
                 if param.discrete:
-                    probabilities = norm.pdf(list(np.arange(param.min_val, param.max_val + param.discretization, param.discretization)), loc=new_val, scale=param.discretization) # scale = param.discretization means one grid point is one standard deviation
+                    # scale = param.discretization means one grid point is one standard deviation
+                    probabilities = norm.pdf(list(np.arange(param.min_val, param.max_val + param.discretization, param.discretization)), loc=new_val, scale=param.discretization)
                     probabilities /= np.sum(probabilities)
                     new_val = np.random.choice(list(np.arange(param.min_val, param.max_val + param.discretization, param.discretization)), p=probabilities)
-
-                # if new_val < param.min_val:
-                #     new_val = param.min_val
-                # elif new_val > param.max_val:
-                #     new_val = param.max_val
 
                 param.val = new_val
 
@@ -290,29 +290,35 @@ class PSO_optimizer:
                 self.log_lines.append(f'Particle {i}, Output: {f_output}, {particle.params}, {datetime.datetime.now()}')
                 print(f'Particle {i}, Output: {f_output}, {particle.params}')
 
+        self.swarm.update_best_location()
+
 
     def optimize(self, n_particles, w_inertia, c_cog, c_social, range_count_thresh, convergence_range, max_iterations=200, logging=True):
-        self.initialize_particles(n_particles, logging)
         if logging:
-            log_path = os.path.dirname(os.path.realpath(__file__))
+            self.log_lines = []
+            self.log_lines.append(f'PSO_optimizer initialized at {datetime.datetime.now()}')
+        
+        self.initialize_particles(n_particles, logging)
+        
+        self.swarm.update_best_location()
+
+        if logging:
             self.log_lines.append(f'Iteration 0, best value: {self.swarm.bval}, {self.swarm.bparams}')
 
             print(f'Iteration 0, best value: {self.swarm.bval}, {self.swarm.bparams}')
 
             # clear pickle file
-            with open(os.path.join(log_path, 'PSO_replay.pkl'), 'wb') as f:
+            with open(path('logging_pkl_write'), 'wb') as f:
                 pickle.dump(self.swarm, f)
 
-            with open(os.path.join(log_path, 'PSO_log.txt'), 'w') as f:
+            with open(path('logging_txt_write'), 'w') as f:
                 for line in self.log_lines:
-                    f.write(line + "\n")
+                    f.write(line + '\n')
 
 
         iterations = 1
         within_range_count = 0
 
-        # at one iteration max_hist = min_hist which breaks it - which is why len(bval_hist) < hist_len is needed
-        # use abs val convergence criteria, NOT percent because percent is finnicky (you could do percent of total range though)
         # when all particles' bests are within the range of the swarm best for multiple iterations, solution is said to have converged
         # not just one iteration, because particles have a tendency to overshoot and swing by what it currently thinks is the best, which is good behaviour
         while within_range_count < range_count_thresh and iterations <= max_iterations:
@@ -324,12 +330,12 @@ class PSO_optimizer:
 
                 print(f'Iteration {iterations}, best value: {self.swarm.bval}, {self.swarm.bparams}')
 
-                with open(os.path.join(log_path, 'PSO_replay.pkl'), 'ab') as f:
+                with open(path('logging_pkl_write'), 'ab') as f:
                     pickle.dump(self.swarm, f)
 
-                with open(os.path.join(log_path, 'PSO_log.txt'), "a") as f:
+                with open(path('logging_txt_write'), 'a') as f:
                     for line in self.log_lines:
-                        f.write(line + "\n")
+                        f.write(line + '\n')
 
             iterations += 1
 
@@ -341,11 +347,10 @@ class PSO_optimizer:
                     param_dists.append(self.swarm.bparam_val(param.name) - particle.bparam_val(param.name))
                 particle_dists.append(np.sqrt(sum(param_dist**2 for param_dist in param_dists)))
 
-            # somehow calc dist for all and compare
             if all(dist < convergence_range for dist in particle_dists):
                 within_range_count += 1
             else:
-                # reset if particles are out of range
+                # reset consecutive count if some particle bests are out of range
                 within_range_count = 0
 
         return self.swarm.bparams, self.swarm.bval

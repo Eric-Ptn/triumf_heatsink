@@ -149,5 +149,5 @@ def test_constraint3(params):
     return pw < 60.658446 / n
 
 if __name__ == '__main__':
-    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params5, test_objective1, test_constraint3)
-    HUGE_NUCLEAR_OPTIMIZER.optimize(4, 0.8, 0.1, 0.1, range_count_thresh=5, convergence_range=0.2)
+    HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_params2, test_objective2)
+    HUGE_NUCLEAR_OPTIMIZER.optimize(n_particles=4, w_inertia=0.8, c_cog=0.1, c_social=0.1, range_count_thresh=5, convergence_range=0.2)
