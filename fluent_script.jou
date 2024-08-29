@@ -1,0 +1,11 @@
+define/operating-conditions/gravity y 0 -9.81 0
+define/models/energy y n n n y
+define/models/viscous kw-sst y
+define/materials/copy fluid water-liquid
+define/boundary-conditions/set fluid fluid () material y water-liquid q
+define/boundary-conditions/velocity-inlet inlet n n y y n 3.4646 n 0 n 300 n n n y 5 0.0176
+define/boundary-conditions/pressure-outlet outlet y n 0 n 300 n y n n n y 5 0.0176 y n n n
+define/boundary-conditions/wall heat_in n 0 n 0 n n n 3395793 n n 1
+solve/report-definitions/add heatsink_temp volume-max field temperature zone-names heatsink () q
+define/parameters/output-parameters/create report-definition heatsink_temp
+solve/set number-of-iterations 100
