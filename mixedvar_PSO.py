@@ -224,44 +224,71 @@ class PSO_optimizer:
         else:
             return set(temp_params)
     
-    def initialize_particles(self, n_particles, logging):
+    def initialize_particles(self, n_particles, logging, box_init):
         self.n_particles = n_particles
         self.swarm = PSO_swarm()
         self.swarm.add_particles([PSO_particle(self.f, self.swarm) for _ in range(n_particles)], all(param.discrete for param in self.params))
 
-        # make a grid of points
-        # Calculate the number of points along each dimension
-        points_per_dim = int(np.ceil(n_particles ** (1 / len(self.params))))
+        if box_init:
+            # make a grid of points
+            # Calculate the number of points along each dimension
+            points_per_dim = int(np.ceil(n_particles ** (1 / len(self.params))))
 
-        grids = [np.linspace(0, 1, points_per_dim, endpoint=False) + 1 / (2 * points_per_dim) for _ in range(len(self.params))]
-        grid = np.array(np.meshgrid(*grids)).T.reshape(-1, len(self.params))
+            grids = [np.linspace(0, 1, points_per_dim, endpoint=False) + 1 / (2 * points_per_dim) for _ in range(len(self.params))]
+            grid = np.array(np.meshgrid(*grids)).T.reshape(-1, len(self.params))
 
-        # If we have more points than needed, randomly select n_particles
-        if len(grid) > n_particles:
-            indices = np.random.choice(len(grid), n_particles, replace=False)
-            grid = grid[indices]
+            # If we have more points than needed, randomly select n_particles
+            if len(grid) > n_particles:
+                indices = np.random.choice(len(grid), n_particles, replace=False)
+                grid = grid[indices]
 
 
-        for i, particle in enumerate(self.swarm.particles):
-            particle_params = set()
+            for i, particle in enumerate(self.swarm.particles):
+                particle_params = set()
 
-            for j, param in enumerate(self.params):
-                if param.discrete:
-                    grid_pos = myround(grid[i, j] * (param.max_val - param.min_val) + param.min_val, param.discretization)
-                else:
-                    grid_pos = grid[i, j] * (param.max_val - param.min_val) + param.min_val
+                for j, param in enumerate(self.params):
+                    if param.discrete:
+                        grid_pos = myround(grid[i, j] * (param.max_val - param.min_val) + param.min_val, param.discretization)
+                    else:
+                        grid_pos = grid[i, j] * (param.max_val - param.min_val) + param.min_val
 
-                vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # found that this 0.2 scaling works nicely on initial vel, another day another magic number
+                    vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # found that this 0.2 scaling works nicely on initial vel, another day another magic number
 
-                particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel, param.discretization))
+                    particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, grid_pos, vel, param.discretization))
 
-            particle_params = self.clip_to_constraint(particle_params)
-            
-            f_output = particle.set_motion(particle_params)
+                particle_params = self.clip_to_constraint(particle_params)
+                
+                f_output = particle.set_motion(particle_params)
 
-            if logging:
-                self.log_lines.append(f'Particle {i}, Output: {f_output}, {particle.params}, {datetime.datetime.now()}')
-                print(f'Particle {i}, Output: {f_output}, {particle.params}')
+                if logging:
+                    self.log_lines.append(f'Particle {i}, Output: {f_output}, {particle.params}, {datetime.datetime.now()}')
+                    print(f'Particle {i}, Output: {f_output}, {particle.params}')
+
+        else:
+            # Initialize particles using random sampling within constraints
+            constraints_satisfied = 0
+            while constraints_satisfied < n_particles:
+                particle_params = set()
+                for param in self.params:
+                    if param.discrete:
+                        rand_val = np.random.uniform(param.min_val, param.max_val)
+                        rand_val = myround(rand_val, param.discretization)
+                    else:
+                        rand_val = np.random.uniform(param.min_val, param.max_val)
+
+                    vel = np.random.uniform(-1, 1) * (param.max_val - param.min_val) * 0.2 # found that this 0.2 scaling works nicely on initial vel, another day another magic number
+                    particle_params.add(PSO_param(param.name, param.discrete, param.min_val, param.max_val, rand_val, vel, param.discretization))
+
+                # Check if the constraints are satisfied
+                if self.constraint_func(particle_params):
+                    # Set particle parameters and add to swarm
+                    f_output = self.swarm.particles[constraints_satisfied].set_motion(particle_params)
+
+                    if logging:
+                        self.log_lines.append(f'Particle {constraints_satisfied}, Output: {f_output}, {particle_params}, {datetime.datetime.now()}')
+                        print(f'Particle {constraints_satisfied}, Output: {f_output}, {particle_params}')
+
+                    constraints_satisfied += 1
 
 
     def update(self, w_inertia, c_cog, c_social, logging):
@@ -293,12 +320,12 @@ class PSO_optimizer:
         self.swarm.update_best_location()
 
 
-    def optimize(self, n_particles, w_inertia, c_cog, c_social, range_count_thresh, convergence_range, max_iterations=200, logging=True):
+    def optimize(self, n_particles, w_inertia, c_cog, c_social, range_count_thresh, convergence_range, max_iterations=200, logging=True, box_init=False):
         if logging:
             self.log_lines = []
             self.log_lines.append(f'PSO_optimizer initialized at {datetime.datetime.now()}')
         
-        self.initialize_particles(n_particles, logging)
+        self.initialize_particles(n_particles, logging, box_init)
         
         self.swarm.update_best_location()
 

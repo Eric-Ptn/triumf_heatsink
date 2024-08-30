@@ -1,5 +1,7 @@
 import os
 import time
+
+os.chdir(os.path.dirname(__file__))
 from config import path
 
 
@@ -46,7 +48,7 @@ def exec_container_cmd(container, filepath, language=None):
 def run_ansys_update(params):
     f_system = GetSystem(Name='FFF')
     f_mesh_component = f_system.GetComponent(Name='Mesh')
-    f_mesh_container = f_setup_component.GetContainer(ComponentName='Mesh')
+    f_mesh_container = f_system.GetContainer(ComponentName='Mesh')
     f_sol_component = f_system.GetComponent(Name='Solution')
     f_setup_component = f_system.GetComponent(Name='Setup')
     f_setup_container = f_system.GetContainer(ComponentName='Setup')

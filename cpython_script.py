@@ -5,8 +5,10 @@ from config import path
 
 
 input_ANSYS_params = {
-    PSO_param('plate_width', False, 0.5, 3),
-    PSO_param('n_plates', True, 15, 45)
+    PSO_param('pin_width', True, 1, 5, discretization=0.25),
+    PSO_param('n_width', True, 8, 40), 
+    PSO_param('pin_height', True, 1, 5, discretization=0.25),
+    PSO_param('n_length', True, 8, 40)
 }
 
 
@@ -36,19 +38,25 @@ def input_constraint(params):
 
         return None
 
-    pw = get_param('plate_width').val
-    n = get_param('n_plates').val
-    return pw < (60.65846 - 0.5 * (n - 1)) / n # 0.5mm extra space
+    pw = get_param('pin_width').val
+    nw = get_param('n_width').val
+    ph = get_param('pin_height').val
+    nl = get_param('n_length').val
+
+    clearance = 0.5 # 0.5mm extra space
+
+    return pw < (60.65846 - clearance * (nw - 1)) / nw and ph < (58 - clearance * (nl - 1)) / nl 
 
 
 if __name__ == '__main__':
     HUGE_NUCLEAR_OPTIMIZER = PSO_optimizer(input_ANSYS_params, optimization_function, input_constraint)
-    result = HUGE_NUCLEAR_OPTIMIZER.optimize(n_particles=6, 
+    result = HUGE_NUCLEAR_OPTIMIZER.optimize(n_particles=16, 
                                              w_inertia=0.8, 
                                              c_cog=0.1, 
                                              c_social=0.1, 
                                              range_count_thresh=5, 
-                                             convergence_range=5)
+                                             convergence_range=5,
+                                             max_iterations=50)
 
     with open(path('optimization_result'), 'w') as f:
         f.write(str(result))
